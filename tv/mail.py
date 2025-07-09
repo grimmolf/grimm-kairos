@@ -16,7 +16,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from urllib.parse import unquote
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.auth.transport.requests import Request
+from google.oauth2.service_account import Credentials as ServiceAccountCredentials
+from google.auth.exceptions import RefreshError
 import requests
 import yaml
 from bs4 import BeautifulSoup
@@ -27,6 +29,7 @@ import http.client as http_client
 # -------------------------------------------------
 #
 # Utility to read email from Gmail Using Python
+# Updated to use modern google-auth instead of deprecated oauth2client
 #
 # ------------------------------------------------
 
@@ -950,9 +953,10 @@ def send_signals_to_google_sheet(google_api_creds, data, google_sheets_config):
                 enabled = config_item['enabled']
             if enabled:
                 result = ''
-                scope = ['https://spreadsheets.google.com/feeds',
-                         'https://www.googleapis.com/auth/drive']
-                credentials = ServiceAccountCredentials.from_json_keyfile_name(google_api_creds, scope)
+                # Modern Google Auth scopes
+                scope = ['https://www.googleapis.com/auth/spreadsheets',
+                         'https://www.googleapis.com/auth/drive.file']
+                credentials = ServiceAccountCredentials.from_service_account_file(google_api_creds, scopes=scope)
                 log_level = log.level
                 if log_level == 20:
                     log.level = 30
@@ -993,9 +997,10 @@ def send_signals_to_google_sheet(google_api_creds, data, google_sheets_config):
 def send_alert_to_google_sheet(google_api_creds, data, name, sheet='', index=1, search_criteria=''):
     try:
         results = []
-        scope = ['https://spreadsheets.google.com/feeds',
-                 'https://www.googleapis.com/auth/drive']
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(google_api_creds, scope)
+        # Modern Google Auth scopes  
+        scope = ['https://www.googleapis.com/auth/spreadsheets',
+                 'https://www.googleapis.com/auth/drive.file']
+        credentials = ServiceAccountCredentials.from_service_account_file(google_api_creds, scopes=scope)
         client = gspread.authorize(credentials)
         sheet = client.open(name).worksheet(sheet)
 

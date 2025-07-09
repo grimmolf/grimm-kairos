@@ -1,0 +1,52 @@
+# Kairos Modern Dependencies
+# Removed deprecated packages: oauth2client, configparser, pip, setuptools, soupsieve
+# Updated to modern versions with security patches
+
+# Core Web Automation
+selenium>=4.15.0,<5.0
+beautifulsoup4>=4.12.0,<5.0
+requests>=2.31.0,<3.0
+
+# Configuration and Data
+pyyaml>=6.0,<7.0
+
+# Google Services (Modern Auth - replaces oauth2client)
+google-auth>=2.23.0,<3.0
+google-auth-oauthlib>=1.1.0,<2.0
+google-api-python-client>=2.100.0,<3.0
+gspread>=5.11.0,<6.0
+
+# Image Processing
+Pillow>=10.0.0,<11.0
+
+# Data Processing
+numpy>=1.24.0,<2.0
+fastnumbers>=5.0.0,<6.0
+
+# Database
+pymongo>=4.5.0,<5.0
+
+# System Utilities
+psutil>=5.9.0,<6.0
+tqdm>=4.66.0,<5.0
+
+# Logging and Output
+coloredlogs>=15.0.0,<16.0
+
+# Platform-specific (Linux)
+pyvirtualdisplay>=3.0;platform_system=='Linux'
+
+# Platform-specific (macOS)
+pyobjc-core>=9.0;platform_system=='Darwin'
+pyobjc>=9.0;platform_system=='Darwin'
+
+# Development Dependencies (optional)
+pytest>=7.4.0,<8.0
+pytest-cov>=4.1.0,<5.0
+black>=23.7.0,<24.0
+flake8>=6.0.0,<7.0
+mypy>=1.5.0,<2.0
+
+# Build Dependencies (optional)
+Cython>=3.0.0,<4.0
+dill>=0.3.7,<1.0

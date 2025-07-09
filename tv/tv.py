@@ -22,7 +22,7 @@ import re
 import sys
 import time
 import errno
-import chromedriver_autoinstaller
+# chromedriver_autoinstaller removed - using Selenium 4+ built-in WebDriver management
 import dill
 import numpy
 
@@ -32,14 +32,16 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException, NoAlertPresentException, \
     TimeoutException, InvalidArgumentException, WebDriverException, InvalidSessionIdException, \
     SessionNotCreatedException, JavascriptException, ElementClickInterceptedException, ElementNotInteractableException
-from selenium.webdriver import DesiredCapabilities, ActionChains
+from selenium.webdriver import ActionChains
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 from multiprocessing import Pool
-from selenium_stealth import stealth
+# selenium-stealth removed - using built-in Chrome options for anti-detection
 from kairos import timing
 from kairos import tools
 from kairos.tools import format_number, unicode_to_float_int, strip_to_ascii
@@ -3152,8 +3154,8 @@ def create_browser(run_in_background, resolution='1920,1080', download_path=None
     global DOWNLOAD_PATH
 
     initial_setup = False
-    capabilities = DesiredCapabilities.CHROME.copy()
-    options = webdriver.ChromeOptions()
+    # Modern Chrome options setup
+    options = Options()
 
     # options.add_argument("--incognito")
     if config.has_option('webdriver', 'web_browser_path'):
@@ -3184,22 +3186,28 @@ def create_browser(run_in_background, resolution='1920,1080', download_path=None
             options.add_argument(option.strip())
     else:
         if not CAPTCHA_EXTENSION:
+            # Modern anti-detection options (replaces selenium-stealth)
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
+        
+        # Performance and stability options
+        if not CAPTCHA_EXTENSION:
             options.add_argument('--disable-extensions')
         options.add_argument('--disable-notifications')
         options.add_argument('--noerrdialogs')
         options.add_argument('--disable-session-crashed-bubble')
-        # options.add_argument('--disable-infobars')
-        # options.add_argument('--disable-restore-session-state')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--window-size=' + resolution)
-        # suppress the INFO:CONSOLE messages
         options.add_argument("--log-level=3")
+        
+        # Platform-specific optimizations
         if OS == 'linux':
             options.add_argument('--no-sandbox')
-            options.add_argument("--disable-dev-shm-usage")
-        # run chrome in the background
+            
+        # Modern headless mode
         if run_in_background:
-            # switching to the new headless mode
-            # https://developer.chrome.com/articles/new-headless/
             options.add_argument('--headless=new')
         # fix for https://stackoverflow.com/questions/40514022/chrome-webdriver-produces-timeout-in-selenium
         # options.add_argument("--dns-prefetch-disable")
@@ -3256,15 +3264,18 @@ def create_browser(run_in_background, resolution='1920,1080', download_path=None
             browser = webdriver.Remote(options=options)
         else:
             from selenium.webdriver.chrome.service import Service
-            if config.has_option('webdriver', 'path'):
+            # Modern WebDriver service setup (Selenium 4+ auto-manages ChromeDriver)
+            if config.has_option('webdriver', 'path') and config.get('webdriver', 'path').strip():
                 from pathlib import Path
-                driver_path = Path(r'{}'.format(config.get('webdriver', 'path')))
-                if config.has_option('webdriver', 'auto_update') and config.getboolean('webdriver', 'auto_update'):
-                    driver_path = chromedriver_autoinstaller.install(path=r'{}'.format(driver_path.parent))  # automatically get latest chromedriver
-                log.info("using {} as webdriver".format(driver_path))
-                service = Service(executable_path=driver_path)
+                driver_path = Path(config.get('webdriver', 'path'))
+                if driver_path.exists():
+                    log.info("using custom webdriver: {}".format(driver_path))
+                    service = Service(executable_path=str(driver_path))
+                else:
+                    log.warning("custom webdriver path not found, using Selenium Manager")
+                    service = Service()
             else:
-                log.info('using Selenium Manager to find latest webdriver')
+                log.info('using Selenium Manager for automatic webdriver management')
                 service = Service()
             browser = webdriver.Chrome(service=service, options=options)
 
@@ -3272,15 +3283,11 @@ def create_browser(run_in_background, resolution='1920,1080', download_path=None
         browser.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
         driver_version = check_driver(browser)
         user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{} Safari/537.36'.format(driver_version)
-        stealth(browser,
-                user_agent=user_agent,
-                languages=["en-US", "en"],
-                vendor="Google Inc.",
-                platform="Win32",
-                webgl_vendor="Intel Inc.",
-                renderer="Intel Iris OpenGL Engine",
-                fix_hairline=True,
-                )
+        # Modern anti-detection setup (replaces selenium-stealth)
+        browser.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        browser.execute_cdp_cmd('Network.setUserAgentOverride', {
+            "userAgent": user_agent
+        })
 
         if initial_setup:
             log.info("creating shared session for kairos user data directory")
